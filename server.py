@@ -101,6 +101,7 @@ def make_handler(app):
                 path = urlparse(self.path).path
                 actions = {
                     "/api/story/read": lambda: app.progress.read_story(body.get('page')),
+                    "/api/sensei/read": lambda: app.progress.read_sensei(body.get('page')),
                     "/api/settings": lambda: app.settings(body),
                     "/api/match/start": lambda: app.start(body.get("opponent"), body.get("size", 9)),
                     "/api/match/play": lambda: app.play(body.get("point")),

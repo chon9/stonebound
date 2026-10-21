@@ -58,11 +58,17 @@ def main():
             state = app.state()
             if state["match"]["error"] or state["match"]["moveNumber"] != 2:
                 raise RuntimeError(state["match"]["error"] or "The AI turn did not complete.")
+            app.hint()
+            coaching = app.state()['match']['sensei']
+            if not coaching or len(coaching['preview']['points']) != 81 or not app.match.get('review'):
+                raise RuntimeError('The bundled mentor did not return KataGo advice and a territory map.')
             app.settings({"language": "zh-CN"})
             report = {"ok": True, "frozen": FROZEN, "engine": app.bridge.context.config("engine/katago"),
                       "model": app.bridge.context.config("engine/model"), "moves": state["match"]["moves"],
                       "stones": state["match"]["stones"], "language": app.progress.data["language"],
                       "music_tracks":len(state['music']),
+                      "sensei": {"best_move": coaching['gtp'], "ownership_points":len(coaching['preview']['points']),
+                                 "review":app.match['review']['severity'], "spirit_manga_pages":len(state['sensei']['pages'])},
                       "campaign": {"opponents":len(state['opponents']), "items":len(state['items']),
                                    "chapters":len(state['story']['chapters']), "manga_pages":len(state['story']['pages'])}}
             Path(args.self_test).resolve().write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -96,6 +102,14 @@ def main():
                         if ready:
                             title = window.evaluate_js("document.title")
                             chapters = window.evaluate_js("document.querySelectorAll('[data-chapter]').length")
+                            window.evaluate_js("document.querySelector('.spirit-invitation').click(); window.__spiritImage = new Image(); window.__spiritImage.src = '/assets/comics/sensei.png'; true")
+                            while time.monotonic() < deadline and not window.evaluate_js("window.__spiritImage.naturalWidth > 0"):
+                                time.sleep(.1)
+                            spirit_width = window.evaluate_js("window.__spiritImage.naturalWidth")
+                            spirit_panels = window.evaluate_js("document.querySelectorAll('.spirit-comic .comic-panel').length")
+                            if spirit_width != 1536 or spirit_panels != 3:
+                                raise RuntimeError('The native ghost manga did not load.')
+                            window.evaluate_js("document.querySelector('[data-action=\"close-modal\"]').click(); true")
                             window.evaluate_js("document.querySelector('.manga-invitation').click(); window.__comicImage = new Image(); window.__comicImage.src = '/assets/comics/chapter-01.png'; true")
                             while time.monotonic() < deadline and not window.evaluate_js("window.__comicImage.naturalWidth > 0"):
                                 time.sleep(.1)
@@ -127,6 +141,7 @@ def main():
                                 raise RuntimeError(f'Native soundtrack decoder could not load the bundled music: {detail}')
                             Path(args.window_test).resolve().write_text(json.dumps({"ok": True, "native_window": True, "title": title,
                                 "chapter_buttons":chapters, "comic_panels":panels, "comic_image_width":image_width,
+                                "spirit_panels":spirit_panels, "spirit_image_width":spirit_width,
                                 "music_tracks":len(app.state()['music']), "decoded_music_duration":music_duration}), encoding="utf-8")
                             return
                     except Exception as error:

@@ -21,6 +21,22 @@ earned by completing chapters. New materials appear on the actual Go board.
 8章、24位棋友、48件藏品、16篇漫画（共48格）。每章三场胜利解锁结章与专属纪念品。
 故事册可重看已解锁漫画，漫画对白可即时切换中英文。旧存档自动补发已完成章节纪念品。
 
+GHOST MASTER / 棋灵师父
+Yangui (砚归), an original ancient Go-master ghost, travels with you. Read his
+awakening and homecoming manga, plus eight chapter reflections in Chronicle.
+Ask Sensei shows an actual KataGo move recommendation and a territory estimate.
+Large estimated point losses trigger Classical Chinese advice with translations.
+原创新棋灵「砚归」相伴八章旅途，另有觉醒与归来两篇漫画（故事共18篇、54格）。
+「请教师父」可看KataGo推荐落点与地盘估计；明显失误会触发文言训诫，并附白话说明。
+
+TERRITORY / 地盘标示
+During play, Ask Sensei enables a toggleable ownership estimate. Black/white
+squares mark confident empty points; gray dots are uncertain. After two passes,
+final territory and crossed-out dead stones match the Chinese area count.
+After resignation, the overlay is an estimate and the result remains W+R.
+局中形势仅为估计；双方停着后显示终局地盘、死子红叉与中国规则计分。
+认输时只显示形势估计，结果仍为W+R。启程画面可回看上一局。
+
 BACKGROUND MUSIC / 背景音乐
 Four CC0 tracks by The Cynic Project play in a looping playlist, bundled for
 offline use. Music starts after your first interaction at 22% volume. Use the

@@ -15,7 +15,7 @@ def new_profile():
         "defeated": [], "owned": ["hinoki", "classic"],
         "equipped": {"board": "hinoki", "stones": "classic"},
         "journal": [], "match": None, "language": "en", "sound": True, "story_seen": [],
-        "music": True, "music_volume": 0.22, "music_track": "vaporware",
+        "music": True, "music_volume": 0.22, "music_track": "vaporware", "sensei_seen": [],
     }
 
 
@@ -45,6 +45,16 @@ class Progress:
                 raise ValueError('Complete the previous chapter to read this story.')
             if page_id not in self.data['story_seen']:
                 self.data['story_seen'].append(page_id)
+                self.save()
+
+    def read_sensei(self, page_id):
+        from .sensei import story_snapshot as spirit_story
+        with self.lock:
+            page = next((p for p in spirit_story(self.data['defeated'], self.data['sensei_seen'])['pages'] if p['id'] == page_id), None)
+            if not page or not page['unlocked']:
+                raise ValueError('Complete the journey to read this spirit story.')
+            if page_id not in self.data['sensei_seen']:
+                self.data['sensei_seen'].append(page_id)
                 self.save()
 
     def save(self):

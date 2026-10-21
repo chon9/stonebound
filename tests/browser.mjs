@@ -43,6 +43,7 @@ try{
   assert.equal(await page.locator('.comic-panel').count(),3);
   await shot('stonebound-manga-zh');
   await page.locator('[data-comic-done]').click();
+  if(!initial.profile.sensei_seen.includes('spirit-awakening')){await page.locator('[data-spirit-done]').click();}
   await page.locator('[data-action="next-dialogue"]').click();
   assert((await page.locator('.dialogue-content blockquote').innerText()).includes('爷爷'));
   await page.locator('[data-action="next-dialogue"]').click();
@@ -57,7 +58,7 @@ try{
   assert.equal(current.match.stones.length,2);console.log('Real AI moves:',current.match.moves);
   assert(await page.evaluate(()=>window.matchMusic===document.querySelector('#bgm-audio')&&!window.matchMusic.paused),'Music should continue through dialogue, a game and real AI updates.');
   await shot('stonebound-match-zh');
-  await page.locator('[data-action="hint"]').click();await waitFor(s=>!!s.match?.hint,'Hint missing');await page.locator('.hint-note').waitFor();
+  await page.locator('[data-action="hint"]').first().click();await waitFor(s=>!!s.match?.hint,'Hint missing');await page.locator('.hint-note').waitFor();
   assert((await page.locator('.hint-note').innerText()).includes('KataGo'));
   await page.locator('[data-action="undo"]').click();await waitFor(s=>s.match?.moveNumber===0,'Undo did not restore board');
   await page.locator('#go-board').focus();await page.keyboard.press('ArrowLeft');await page.keyboard.press('Enter');

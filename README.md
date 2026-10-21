@@ -20,17 +20,17 @@
 </p>
 
 <p align="center">
-  <code>24 rivals</code> · <code>8 chapters</code> · <code>48 collectibles</code> · <code>48 manga panels</code><br>
+  <code>24 rivals</code> · <code>8 chapters</code> · <code>48 collectibles</code> · <code>54 manga panels</code><br>
   English / 简体中文 · Windows portable · Local single-player
 </p>
 
 ---
 
-An unsigned letter. Your grandmother’s old Go board. A riverside club with an uncertain future.
+An unsigned letter. Your grandmother’s old Go board. An ancient spirit who remembers her.
 
 Follow the railway, wander through a lantern festival, listen to stories at the harbor, and find your way into the regional cup. Meet the person across the board, earn a keepsake, and carry a little of each place into your next game.
 
-带着外婆的旧棋盘与一封未署名的信，走进一座即将失去棋社的小镇。从河畔到港口，从夏祭到地区杯，以一局局围棋结识朋友，拾起故事，也找回棋社的灯火。
+带着外婆的旧棋盘与一封未署名的信，走进一座即将失去棋社的小镇。从河畔到港口，从夏祭到地区杯，旧棋盘中的古代棋灵「砚归」与你同行，以一局局围棋结识朋友，拾起故事，也找回棋社的灯火。
 
 ## A look inside
 
@@ -47,12 +47,34 @@ These are screenshots of the playable game. Click an image to see it full size.
 | | Your journey |
 | :--- | :--- |
 | **People worth meeting** | 24 original rivals across 8 districts, each with their own conversations and KaTrain-calibrated strength. |
-| **A story you can turn the pages of** | 16 manga pages, 48 illustrated panels, chapter openings and unlockable conclusions. Revisit your memories in the Chronicle. |
+| **A story you can turn the pages of** | 18 manga pages, 54 illustrated panels: eight chapter openings/conclusions plus the ghost master’s awakening and homecoming. Revisit your memories in the Chronicle. |
 | **A board that becomes yours** | Collect 24 boards and 24 stone sets: porcelain, sea glass, star charts, kintsugi, jade and more. Preview materials, then play with them. |
 | **Keepsakes you earn** | Finish each chapter’s three encounters to receive its exclusive keepsake. Victories also earn coins for the treasury. |
-| **Room to learn** | Choose 9×9, 13×13 or 19×19. Take your time, ask KataGo for a hint, or undo a move. |
+| **A ghost at your shoulder** | Yangui, an original ancient Go-master spirit, travels with you through eight chapter reflections and two manga episodes. |
+| **Room to learn** | Ask Sensei for a real KataGo recommendation and territory preview. Large point losses earn a Classical Chinese rebuke, with a plain-language explanation. Undo and try again. |
+| **See the board clearly** | Toggle black/white territory estimates during play; see final territory, neutral points and crossed-out dead stones after two passes. |
 | **Quiet moves, quiet music** | Four bundled CC0 tracks with automatic playlist looping, independent volume and track controls. Works offline. |
 | **Your language, your pace** | English and Simplified Chinese throughout the UI, conversations and manga. Progress, equipment and preferences save automatically. |
+
+## A master who remembers your grandmother
+
+**Yangui / 砚归** is an original Go-master ghost bound to Akari’s board. His awakening manga introduces a promise: *“I shall teach; thou shalt choose.”* Eight chapter reflections connect his memories to your journey; completing all eight chapters unlocks his homecoming manga. Revisit both episodes and unlocked reflections in **Chronicle**.
+
+At the board, **Ask Sensei** reveals KataGo’s highest-ranked current suggestion, a learning prompt and a territory overlay. After your move, the game compares Black’s estimated lead **before and immediately after your move, before White replies**. Estimated losses of 3+ points receive a warning; 6+ points earn a sterner Classical Chinese rebuke:
+
+> 缓急不分，轻重倒置！且静心审局，勿再轻投。
+
+Chinese includes a modern explanation; English includes a translation. The commentary is authored, while move recommendations, ownership and point-loss estimates come from the actual KataGo analysis. Short searches can change their judgment; the master never scolds a move for differing from first choice alone.
+
+师父「砚归」随八章故事同行。**请教师父**可查看推荐落点、白话教学与形势预览；严重失误时，他会以文言训诫，并显示估计目损与原推荐手。棋灵觉醒、归来漫画与逐章谈话均可在故事册重看。
+
+| Ask Sensei · 请教师父 | The board remembers · 旧枰有灵 |
+| :---: | :---: |
+| ![Ghost master Yangui teaching with a real KataGo recommendation and mid-game territory overlay](docs/screenshots/sensei.png) | ![Original three-panel manga introducing the spirit bound to the grandmother’s Go board](docs/screenshots/spirit.png) |
+
+After two passes, the board marks enclosed empty points in black or white, neutral points in gray, and removed dead stones with red crosses. Those marks use the same regions as the displayed **Chinese area count**. After resignation, a separate ownership estimate is shown; the result stays **W+R**. The last finished board can be reopened from Adventure.
+
+![A completed real KataGo game with territory marks, dead-stone crosses and the final area count](docs/screenshots/territory.png)
 
 ## A soundtrack for quiet moves
 
@@ -93,7 +115,7 @@ The redesign references the full-screen lobby and game navigation of [Little Kin
 - **Travel:** explore the illustrated town through location markers and character encounters.
 - **Treasury:** buy board and stone designs with earned coins. Story victories unlock stock.
 - **Wardrobe:** preview and equip owned boards and stones.
-- **Chronicle:** eight story chapters, 16 bilingual manga pages (48 illustrated panels), completed-game memories, XP and victories.
+- **Chronicle:** eight story chapters, 18 bilingual manga pages (54 illustrated panels), eight ghost-master reflections, completed-game memories, XP and victories.
 - **Codex:** concise Go rules covering liberties, captures, territory, passes, hints and ko.
 - **Settings:** persistent language and sound preferences; engine status and failure details.
 
@@ -203,6 +225,19 @@ $env:STONEBOUND_TEST_URL = "http://127.0.0.1:8766"
 node tests/music-browser.mjs
 ```
 
+The ghost-master suite checks a real opening-pass mistake, calm feedback for the recommended move, current-position hints and ownership, undo invalidation, resignation estimates, bilingual spirit stories and mobile access. Run it against an isolated save with a ready engine. The final-territory suite uses the actual completed save written by `integration.py` in `.runtime/final-territory`.
+
+```powershell
+$env:STONEBOUND_TEST_URL = "http://127.0.0.1:8766"
+node tests/sensei-browser.mjs
+# In a separate terminal, serve the completed real-game fixture:
+$env:STONEBOUND_DATA_DIR = "$PWD/.runtime/final-territory"
+.venv/Scripts/python.exe server.py --port 8771
+# In another terminal (the test server defaults to 8771):
+$env:STONEBOUND_TEST_URL = "http://127.0.0.1:8771"
+node tests/territory-browser.mjs
+```
+
 The EXE also supports isolated package verification without installing Python:
 
 ```powershell
@@ -210,8 +245,8 @@ release/Stonebound.exe --self-test engine-report.json --data-dir .runtime/packag
 release/Stonebound.exe --window-test window-report.json --data-dir .runtime/window-test
 ```
 
-`--self-test` requires a fresh test save. It initializes the embedded CPU engine and plays a real AI turn. `--window-test` opens a hidden native window, checks that the lobby rendered, writes a JSON report and closes. These modes are for development; normal play needs no command line.
+`--self-test` requires a fresh test save. It initializes the embedded CPU engine, plays a real AI turn and asks Sensei for a recommendation and 81-point ownership map. `--window-test` opens a hidden native window, checks the lobby, both manga readers and bundled MP3 decoding, writes a JSON report and closes. These modes are for development; normal play needs no command line.
 
-Verified for this release: 26 rule/scoring/progression/preference/campaign/music tests; bilingual browser gameplay and mobile layouts; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
+Verified for this release: 34 rule/scoring/progression/preference/campaign/music/mentor tests; bilingual browser gameplay and mobile layouts; real KataGo mistake coaching, territory overlays and completed-game map/count agreement; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
 
 Original generated artwork and prompts are recorded in [ASSETS.md](ASSETS.md). Upstream notices and bundled-font licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

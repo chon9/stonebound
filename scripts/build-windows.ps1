@@ -31,6 +31,7 @@ $buildInfo = [ordered]@{
     katrain_commit = 'f4981cf905cece90085ce4e3967415d0c16d525f'
     campaign = ($campaignJson | ConvertFrom-Json)
     soundtrack = ($musicJson | ConvertFrom-Json)
+    mentor = @{ name = 'Yangui / 砚归'; spirit_manga_pages = 2; chapter_reflections = 8; kataGo_coaching = $true; territory_overlay = $true }
 }
 $buildInfo | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath release/BUILD-INFO.json -Encoding utf8
 Compress-Archive -LiteralPath release/Stonebound.exe,release/READ-ME.txt,release/THIRD_PARTY_NOTICES.md,release/MUSIC.md,release/BUILD-INFO.json,release/licenses -DestinationPath release/Stonebound-Windows-x64.zip -Force

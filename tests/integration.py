@@ -4,6 +4,7 @@ Run from the project root with .venv/Scripts/python.exe tests/integration.py.
 Uses an isolated save, no mocked AI or injected victories.
 """
 import sys
+import json
 import tempfile
 import time
 from pathlib import Path
@@ -37,6 +38,7 @@ def main():
             print("Playing a full game: KataGo hints as black versus KaTrain calibrated 15-kyu white.", flush=True)
             for turn in range(200):
                 app.hint()
+                assert len(app.match['sensei']['preview']['points']) == 81
                 app.play(app.match["hint"]["point"])
                 match = settle(app)
                 if turn % 10 == 0:
@@ -44,6 +46,13 @@ def main():
                 if match["finished"]:
                     break
             assert match["finished"], "The game did not end within 400 moves."
+            assert match['territory']['estimated'] is False
+            assert match['territory']['points'] == match['result']['score']['territory']
+            assert all(c in ('B', 'W', 'N') for x, y, c in match['territory']['points'])
+            # Preserve the real finished game for the territory rendering check.
+            final_fixture = ROOT / '.runtime/final-territory/save.json'
+            final_fixture.parent.mkdir(parents=True, exist_ok=True)
+            final_fixture.write_text(json.dumps(app.progress.snapshot()), encoding='utf-8')
             print(f"Real scored result: {match['result']}", flush=True)
             assert match["result"]["won"], "Strong black did not win; rerun to verify the reward route."
             assert app.progress.data["coins"] == 400

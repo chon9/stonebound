@@ -10,6 +10,7 @@ from .progress import Progress
 from .scoring import area_score
 from .story import story_snapshot
 from .music import TRACKS, TRACK_IDS
+from .sensei import advice, ownership_preview, review_move, story_snapshot as spirit_story
 
 
 class Stonebound:
@@ -29,7 +30,15 @@ class Stonebound:
                     saved = self.progress.data.get("match")
                     if saved:
                         self.game = self.bridge.new_game(saved["size"], saved["moves"])
-                        self.match = {**saved, "thinking": False, "error": None, "hint": None}
+                        self.match = {**saved, "thinking": False, "error": None, "hint": None, "sensei": None}
+                        # Older completed saves had a score but no territory map.
+                        score = (self.match.get('result') or {}).get('score')
+                        if score and 'territory' not in score:
+                            dead = {tuple(s[:2]) for s in score.get('dead', [])}
+                            live = [[*s.coords, s.player] for s in self.game.stones if s.coords not in dead]
+                            score['territory'] = area_score(saved['size'], live)['territory']
+                        if score:
+                            self.match['territory'] = {'estimated': False, 'points': score['territory'], 'dead': score['dead']}
                         if not self.match.get("finished") and self.game.current_node.next_player == "W":
                             self._start_turn()
             except Exception as exc:
@@ -39,7 +48,7 @@ class Stonebound:
     def _persist_match(self):
         if self.game and self.match:
             self.match["moves"] = [[node.move.player, node.move.gtp()] for node in self.game.current_node.nodes_from_root if node.move]
-            self.progress.data["match"] = {k: copy.deepcopy(v) for k, v in self.match.items() if k not in ("thinking", "hint", "error")}
+            self.progress.data["match"] = {k: copy.deepcopy(v) for k, v in self.match.items() if k not in ("thinking", "hint", "error", "sensei")}
         else:
             self.progress.data["match"] = None
         self.progress.save()
@@ -62,6 +71,7 @@ class Stonebound:
             return {"profile": profile, "match": match, "opponents": OPPONENTS, "items": ITEMS,
                     "music": TRACKS,
                     "story": story_snapshot(profile['defeated'], profile['story_seen']),
+                    "sensei": spirit_story(profile['defeated'], profile['sensei_seen']),
                     "engine": {"status": self.bridge.status, "error": self.bridge.error, "name": "KaTrain · KataGo", "strategy": "KaTrain calibrated rank"}}
 
     def start(self, opponent_id, size):
@@ -78,7 +88,8 @@ class Stonebound:
                 raise ValueError("Choose a 9×9, 13×13, or 19×19 board.")
             self.game = self.bridge.new_game(size)
             self.match = {"id": secrets.token_hex(8), "opponent": opponent_id, "size": size, "moves": [],
-                          "thinking": False, "finished": False, "error": None, "hint": None, "result": None}
+                          "thinking": False, "finished": False, "error": None, "hint": None, "result": None,
+                          "sensei": None, "review": None, "territory": None}
             self._persist_match()
 
     def settings(self, values):
@@ -118,21 +129,31 @@ class Stonebound:
             raise ValueError("Retry your rival's turn before playing.")
 
     def play(self, point):
+        # Finish the BEFORE evaluation without holding the app lock. Capture it
+        # before child analysis can update the parent's candidate statistics.
         with self.lock:
             self._require_game()
+            game, node = self.game, self.game.current_node
+        self.bridge.wait_analysis(node)
+        with self.lock:
+            self._require_game()
+            if self.game is not game or self.game.current_node is not node:
+                raise ValueError('The board changed. Choose your move again.')
             if point is not None and (not isinstance(point, list) or len(point) != 2 or any(type(v) is not int for v in point) or any(v < 0 or v >= self.match["size"] for v in point)):
                 raise ValueError("Choose an intersection on the board.")
             move = Move(coords=tuple(point) if point is not None else None, player="B")
+            before = (node.score, node.candidate_moves[0]['move']) if node.candidate_moves else None
             try:
                 self.game.play(move)
             except IllegalMoveException as exc:
                 raise ValueError("That point is occupied, repeats a ko, or leaves your stones with no liberties.") from exc
             self.match["hint"] = None
+            self.match['sensei'] = self.match['review'] = self.match['territory'] = None
             self.match["error"] = None
             self._persist_match()
-            self._start_turn()
+            self._start_turn(before)
 
-    def _start_turn(self):
+    def _start_turn(self, before=None):
         self.match["thinking"] = True
         token = self.match["id"]
         game = self.game
@@ -141,6 +162,10 @@ class Stonebound:
         def work():
             try:
                 node = game.current_node
+                review = None
+                if before and node.move and node.move.player == 'B':
+                    self.bridge.wait_analysis(node)
+                    review = review_move(before[0], node.score, node.move.gtp(), before[1], node.depth)
                 if not (node.is_pass and node.parent and node.parent.is_pass):
                     _, played = self.bridge.play_rival(game, rival)
                     if played is None:
@@ -153,6 +178,8 @@ class Stonebound:
                     if not self.match or self.match["id"] != token:
                         return
                     self.match["thinking"] = False
+                    if review:
+                        self.match['review'] = review
                     if finished:
                         score = area_score(self.match["size"], [[*s.coords, s.player] for s in game.stones], node.ownership)
                         label = f"{score['winner']}+{score['margin']:g}"
@@ -173,6 +200,9 @@ class Stonebound:
         # Commit the result, the final board and the reward in one atomic save.
         reward = self.progress.reward(self.match["opponent"], won, result, commit=False)
         self.match.update({"finished": True, "thinking": False, "result": {"won": won, "label": result, "score": score, **reward}})
+        self.match['hint'] = self.match['sensei'] = None
+        if score:
+            self.match['territory'] = {'estimated': False, 'points': score['territory'], 'dead': score['dead']}
 
     def undo(self):
         with self.lock:
@@ -183,13 +213,22 @@ class Stonebound:
             n = 2 if self.game.current_node.next_player == "B" else 1
             BaseGame.undo(self.game, n_times=n)
             self.match["error"] = self.match["hint"] = None
+            self.match['sensei'] = self.match['review'] = self.match['territory'] = None
             self.game.current_node.analyze(self.bridge.engine)
             self._persist_match()
 
     def resign(self):
         with self.lock:
             self._require_game(player_turn=False)
+            game, node = self.game, self.game.current_node
+        self.bridge.wait_analysis(node)
+        preview = ownership_preview(game.board_size[0], node.ownership, node.score)
+        with self.lock:
+            self._require_game(player_turn=False)
+            if self.game is not game or game.current_node is not node:
+                raise ValueError('The board changed. Try again.')
             self._finish(False, "W+R")
+            self.match['territory'] = preview
             self._persist_match()
 
     def abandon(self):
@@ -216,10 +255,10 @@ class Stonebound:
             self._require_game()
             game, token, node = self.game, self.match["id"], self.game.current_node
         self.bridge.wait_analysis(node)
-        candidates = node.candidate_moves
-        if not candidates:
-            raise ValueError("A hint isn't available yet. Try again in a moment.")
-        move = Move.from_gtp(candidates[0]["move"], player="B")
+        teaching = advice(node, game.board_size[0], [[*s.coords, s.player] for s in game.stones], Move)
         with self.lock:
-            if self.game is game and self.match["id"] == token and self.game.current_node is node:
-                self.match["hint"] = {"point": list(move.coords) if not move.is_pass else None, "gtp": move.gtp()}
+            if self.game is game and self.match and self.match["id"] == token and self.game.current_node is node and not self.match['finished'] and not self.match['thinking']:
+                self.match["hint"] = {"point": teaching['point'], "gtp": teaching['gtp']}
+                self.match['sensei'] = teaching
+            else:
+                raise ValueError('The board changed. Ask the master again.')

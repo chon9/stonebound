@@ -17,6 +17,7 @@ datas = [(str(root/'web'), 'web'), (str(root/'resources/cpu'), 'resources/cpu'),
          (str(root/'vendor/katrain/LICENSE'), 'licenses/katrain'),
          (str(root/'THIRD_PARTY_NOTICES.md'), 'licenses'), (str(root/'ASSETS.md'), 'licenses'),
          (str(root/'MUSIC.md'), 'licenses/music'),
+         (str(root/'content/sensei-art-prompts.json'), 'content'),
          (str(root/'content/art-prompts.json'), 'content'), (str(root/'content/art-corrections.json'), 'content')]
 for file in (katrain/'KataGo').iterdir():
     if file.suffix.lower() in ('.exe', '.dll', '.cfg', '.pem'):

@@ -22,3 +22,7 @@ Five additional four-character atlases (`web/assets/cast-02.png` through `cast-0
 All 13 generation prompts are recorded verbatim in `content/art-prompts.json`; `scripts/build-art-briefs.py` maintains those briefs. These assets were generated with the built-in imagegen tool for this project. They are not third-party CC0 downloads. Dialogue and captions are authored separately in `stonebound/story.py` and are never baked into images. Material appearances are authored in `web/skins.js`, shared by previews and actual matches.
 
 Chapter 8 was corrected after visual review: the keepsake close-up shows an empty Go board, and the final match has exactly two active players with friends observing. The image-edit brief is recorded in `content/art-corrections.json`.
+
+## Ghost-master artwork
+
+Generated with the built-in imagegen tool on 22 October 2026: `web/assets/sensei.png` is Yangui / 砚归’s transparent portrait, and `web/assets/comics/sensei.png` contains six original panels for two spirit-story episodes. Exact prompts are in `content/sensei-art-prompts.json`. The character and narrative are original; these generated assets are not third-party CC0 downloads. Bilingual dialogue is authored in `stonebound/sensei.py`.
