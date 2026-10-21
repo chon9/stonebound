@@ -1,14 +1,57 @@
-# Stonebound · 棋缘物语
+<p align="center">
+  <img src="web/assets/favicon.svg" width="72" alt="Stonebound seal">
+</p>
 
-A story-driven Go adventure built around the **actual KaTrain / KataGo AI core**. Explore Aoharu, meet 24 original rivals across eight districts, and turn victories into new boards and stone sets.
+<h1 align="center">Stonebound · 棋缘物语</h1>
 
-**[Download Windows portable ZIP](https://github.com/chon9/stonebound/releases/latest/download/Stonebound-Windows-x64.zip)** · [Standalone EXE](https://github.com/chon9/stonebound/releases/latest/download/Stonebound.exe) · [All releases](https://github.com/chon9/stonebound/releases)
+<p align="center">
+  <strong>Every stone begins a story.</strong><br>
+  An original anime Go RPG, powered by the real KaTrain / KataGo AI core.
+</p>
 
-原创动漫风围棋冒险：24位棋友、48件藏品、8章故事与48格漫画。使用真实KaTrain／KataGo AI，支持英文与简体中文。下载Windows便携版，解压后双击即可游玩。
+<p align="center">
+  <a href="https://github.com/chon9/stonebound/releases/latest/download/Stonebound-Windows-x64.zip"><strong>Download for Windows</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/chon9/stonebound/releases/latest/download/Stonebound.exe">Standalone EXE</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/chon9/stonebound/releases">Release notes</a>
+  &nbsp;·&nbsp;
+  <a href="#run-from-source">Build from source</a>
+</p>
 
-![Stonebound adventure lobby](docs/screenshots/adventure.png)
+<p align="center">
+  <code>24 rivals</code> · <code>8 chapters</code> · <code>48 collectibles</code> · <code>48 manga panels</code><br>
+  English / 简体中文 · Windows portable · Local single-player
+</p>
 
-![Bilingual manga story reader](docs/screenshots/manga.png)
+---
+
+An unsigned letter. Your grandmother’s old Go board. A riverside club with an uncertain future.
+
+Follow the railway, wander through a lantern festival, listen to stories at the harbor, and find your way into the regional cup. Meet the person across the board, earn a keepsake, and carry a little of each place into your next game.
+
+带着外婆的旧棋盘与一封未署名的信，走进一座即将失去棋社的小镇。从河畔到港口，从夏祭到地区杯，以一局局围棋结识朋友，拾起故事，也找回棋社的灯火。
+
+## A look inside
+
+These are screenshots of the playable game. Click an image to see it full size.
+
+| Adventure · 落子，启程 | Manga · 翻开旅途的故事 |
+| :---: | :---: |
+| ![Illustrated adventure lobby with chapter and opponent selection](docs/screenshots/adventure.png) | ![Manga reader with original illustrated panels and Chinese dialogue](docs/screenshots/manga.png) |
+| **At the board · 与棋友对弈** | **Your collection · 一方棋盘，一段故事** |
+| ![Actual KaTrain-powered Go match with a rival portrait and a playable board](docs/screenshots/match.png) | ![Equipment collection with unlockable board and stone designs](docs/screenshots/collection.png) |
+
+## What awaits
+
+| | Your journey |
+| :--- | :--- |
+| **People worth meeting** | 24 original rivals across 8 districts, each with their own conversations and KaTrain-calibrated strength. |
+| **A story you can turn the pages of** | 16 manga pages, 48 illustrated panels, chapter openings and unlockable conclusions. Revisit your memories in the Chronicle. |
+| **A board that becomes yours** | Collect 24 boards and 24 stone sets: porcelain, sea glass, star charts, kintsugi, jade and more. Preview materials, then play with them. |
+| **Keepsakes you earn** | Finish each chapter’s three encounters to receive its exclusive keepsake. Victories also earn coins for the treasury. |
+| **Room to learn** | Choose 9×9, 13×13 or 19×19. Take your time, ask KataGo for a hint, or undo a move. |
+| **Your language, your pace** | English and Simplified Chinese throughout the UI, conversations and manga. Progress, equipment and preferences save automatically. |
 
 ## Portable Windows game
 
@@ -22,7 +65,9 @@ Everything writable stays in **`data/` beside the EXE**, including `save.json`, 
 
 To migrate a source-version save, close both versions, back up the destination, and copy `.runtime/save.json` to `data/save.json` beside the EXE. Old saves retain coins, equipment, victories and preferences. Already completed chapters receive their new keepsakes automatically, without changing equipped items. Previously defeated rivals remain available for rematches.
 
-See `PORTABLE-README.txt` for bilingual portable instructions. Startup diagnostics are written to `data/desktop.log`.
+See [PORTABLE-README.txt](PORTABLE-README.txt) for bilingual portable instructions. Startup diagnostics are written to `data/desktop.log`.
+
+**中文快速开始：** 下载上方ZIP，解压到个人文件夹或U盘，双击 `Stonebound.exe`。右上角 **简 / EN** 可切换语言。存档位于EXE旁的 `data` 文件夹；搬家时将它与EXE一起复制。无需安装Python、Git或Node。
 
 ## The game interface
 
@@ -57,6 +102,10 @@ Play black against 24 increasingly strong KaTrain rivals (15 kyu through a confi
 Two consecutive passes end a game. **Chinese area scoring** counts live stones and enclosed empty points, with **6.5 komi** for white. KataGo ownership identifies confidently dead stones; uncertain groups count as alive. **Play out unsettled groups before passing.** There is no manual dead-stone adjudication screen yet.
 
 First wins earn 250–1,405 coins and unlock the next rival. Repeat wins earn 80 coins. Losses award 25 XP. Rewards and purchases are validated and saved by the backend; browser-provided scores do not award wins. Collect 24 boards and 24 stone sets: 40 shop catalog entries (including the two starting items) and eight chapter-completion keepsakes. Keepsakes require beating all three rivals in their chapter; they cannot be purchased. This is a local single-player game with no accounts, payments, or multiplayer.
+
+## For developers
+
+The portable download is ready to play. The sections below explain the AI core, source setup, packaging and verification.
 
 ## Actual KaTrain AI integration
 
