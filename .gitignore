@@ -1,0 +1,16 @@
+.venv/
+.runtime/
+__pycache__/
+*.pyc
+node_modules/
+test-results/
+output/
+vendor/
+.build/
+release/
+data/
+resources/cpu/
+.env
+.env.*
+engine-config.json
+*.log

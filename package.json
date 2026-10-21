@@ -1,0 +1,9 @@
+{
+  "name": "stonebound",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "An original story-driven Go game built on KaTrain and KataGo",
+  "scripts": {"test:browser": "node tests/browser.mjs"},
+  "devDependencies": {"playwright": "1.56.1"}
+}

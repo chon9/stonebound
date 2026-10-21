@@ -1,0 +1,8 @@
+{
+  "katago": "K:/path/to/katago.exe",
+  "model": "K:/path/to/model.bin.gz",
+  "config": "K:/path/to/analysis_config.cfg",
+  "max_visits": 64,
+  "fast_visits": 16,
+  "max_time": 1.5
+}
