@@ -14,7 +14,7 @@ const state=()=>page.request.get(`${base}/api/state`).then(r=>r.json());
 async function waitFor(check,message,timeout=60000){const deadline=Date.now()+timeout;while(Date.now()<deadline){const s=await state();if(check(s))return s;await new Promise(r=>setTimeout(r,300));}throw new Error(message);}
 async function shot(name){await page.evaluate(()=>document.fonts.ready);await page.screenshot({path:`output/${name}.png`,fullPage:true,animations:'disabled'});}
 try{
-  const response=await page.request.post(`${base}/api/settings`,{data:{language:'en'}});assert.equal(response.status(),200);
+  const response=await page.request.post(`${base}/api/settings`,{data:{language:'en',music:true}});assert.equal(response.status(),200);
   await page.goto(base);await page.locator('.begin-btn').waitFor();
   assert.equal(await page.locator('.sidebar').count(),0,'Old dashboard sidebar should be removed');
   assert.equal(await page.locator('.bottom-dock .dock-button').count(),7);
@@ -49,10 +49,13 @@ try{
   await page.locator('.modal [data-size="9"]').click();
   await shot('stonebound-dialogue-zh');
   await page.locator('[data-start="haru"]').click();await page.locator('#go-board').waitFor();
+  await page.waitForFunction(()=>{const a=document.querySelector('#bgm-audio');return a&&!a.paused&&a.currentTime>0;});
+  await page.evaluate(()=>window.matchMusic=document.querySelector('#bgm-audio'));
   const canvas=page.locator('#go-board'),box=await canvas.boundingBox();
   await canvas.click({position:{x:box.width*.288,y:box.height*.712}});
   let current=await waitFor(s=>s.match?.moveNumber===2&&!s.match.thinking,'Actual KaTrain did not reply');
   assert.equal(current.match.stones.length,2);console.log('Real AI moves:',current.match.moves);
+  assert(await page.evaluate(()=>window.matchMusic===document.querySelector('#bgm-audio')&&!window.matchMusic.paused),'Music should continue through dialogue, a game and real AI updates.');
   await shot('stonebound-match-zh');
   await page.locator('[data-action="hint"]').click();await waitFor(s=>!!s.match?.hint,'Hint missing');await page.locator('.hint-note').waitFor();
   assert((await page.locator('.hint-note').innerText()).includes('KataGo'));

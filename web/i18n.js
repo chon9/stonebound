@@ -45,6 +45,9 @@ export function localizeState(data) {
 }
 
 const errors = new Map([
+  ['Music must be on or off.','音乐必须设置为开启或关闭。'],
+  ['Music volume must be between 0 and 100 percent.','音乐音量必须介于0%到100%之间。'],
+  ['Choose a track from the soundtrack.','请选择歌单中的曲目。'],
   ['You have a game in progress. Resume it or leave it first.','你还有一盘未完成的对局。请先继续或离开。'],
   ['Choose a rival from the city.','请在城镇中选择一位棋友。'],
   ['Meet the previous rival on your journey first.','先战胜前一位棋友，继续你的旅程吧。'],

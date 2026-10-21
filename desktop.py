@@ -62,6 +62,7 @@ def main():
             report = {"ok": True, "frozen": FROZEN, "engine": app.bridge.context.config("engine/katago"),
                       "model": app.bridge.context.config("engine/model"), "moves": state["match"]["moves"],
                       "stones": state["match"]["stones"], "language": app.progress.data["language"],
+                      "music_tracks":len(state['music']),
                       "campaign": {"opponents":len(state['opponents']), "items":len(state['items']),
                                    "chapters":len(state['story']['chapters']), "manga_pages":len(state['story']['pages'])}}
             Path(args.self_test).resolve().write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -87,6 +88,7 @@ def main():
 
         def test_window():
             deadline = time.monotonic() + 45
+            last_error = None
             try:
                 while time.monotonic() < deadline:
                     try:
@@ -101,13 +103,37 @@ def main():
                             panels = window.evaluate_js("document.querySelectorAll('.comic-panel').length")
                             if image_width == 0 or panels != 3:
                                 raise RuntimeError('Native manga reader did not load its illustrations.')
+                            # Hidden WebView2 windows defer media preloading. Decode a
+                            # bundled recording directly; trusted-gesture playback is
+                            # verified separately by the real browser interaction suite.
+                            window.evaluate_js("""
+                                window.__musicDecode = {};
+                                fetch(document.querySelector('#bgm-audio').src)
+                                  .then(response => response.arrayBuffer())
+                                  .then(data => {
+                                    const context = new AudioContext();
+                                    return context.decodeAudioData(data)
+                                      .then(buffer => {window.__musicDecode.duration = buffer.duration;})
+                                      .finally(() => context.close());
+                                  })
+                                  .catch(error => {window.__musicDecode.error = String(error);});
+                                true
+                            """)
+                            while time.monotonic() < deadline and not window.evaluate_js("!!(window.__musicDecode.duration || window.__musicDecode.error)"):
+                                time.sleep(.1)
+                            music_duration = window.evaluate_js("window.__musicDecode.duration || 0")
+                            if not music_duration or music_duration < 30:
+                                detail = window.evaluate_js("window.__musicDecode.error || 'timeout'")
+                                raise RuntimeError(f'Native soundtrack decoder could not load the bundled music: {detail}')
                             Path(args.window_test).resolve().write_text(json.dumps({"ok": True, "native_window": True, "title": title,
-                                "chapter_buttons":chapters, "comic_panels":panels, "comic_image_width":image_width}), encoding="utf-8")
+                                "chapter_buttons":chapters, "comic_panels":panels, "comic_image_width":image_width,
+                                "music_tracks":len(app.state()['music']), "decoded_music_duration":music_duration}), encoding="utf-8")
                             return
-                    except Exception:
-                        pass
+                    except Exception as error:
+                        last_error = str(error)
                     time.sleep(0.2)
-                raise TimeoutError("Native WebView2 did not render the game lobby.")
+                diagnostics = window.evaluate_js("JSON.stringify({lobby:!!document.querySelector('.begin-btn'),audio:document.querySelector('#bgm-audio')&&{src:document.querySelector('#bgm-audio').currentSrc,ready:document.querySelector('#bgm-audio').readyState,error:document.querySelector('#bgm-audio').error?.code},text:document.body.innerText.slice(0,160)})")
+                raise TimeoutError(f"Native window verification timed out: {last_error}; {diagnostics}")
             except Exception as error:
                 Path(args.window_test).resolve().write_text(json.dumps({"ok": False, "error": str(error)}), encoding="utf-8")
             finally:
@@ -115,6 +141,10 @@ def main():
 
         webview.start(test_window if args.window_test else None, gui="edgechromium", debug=False,
                       private_mode=False, storage_path=str(RUNTIME / "webview"))
+        if args.window_test:
+            result = json.loads(Path(args.window_test).resolve().read_text(encoding='utf-8'))
+            if not result.get('ok'):
+                raise RuntimeError(result.get('error', 'Native window verification failed.'))
     finally:
         app.bridge.close()
         if server:

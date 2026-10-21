@@ -1,4 +1,7 @@
 const paths = {
+  music:'<path d="M9 18V5l12-2v13M9 9l12-2"/><ellipse cx="6" cy="18" rx="3" ry="3"/><ellipse cx="18" cy="16" rx="3" ry="3"/>',
+  next:'<path d="m5 5 10 7-10 7ZM19 5v14"/>',
+  previous:'<path d="m19 5-10 7 10 7ZM5 5v14"/>',
   map:'<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15m6-12v15"/>',
   book:'<path d="M12 6c-3-3-7-3-10-2v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-3-1-7-1-10 2Z"/><path d="M12 6v15"/>',
   shop:'<path d="m3 9 2-6h14l2 6M3 9c0 4 5 4 5 0 0 4 8 4 8 0 0 4 5 4 5 0M4 12v9h16v-9M9 21v-6h6v6"/>',

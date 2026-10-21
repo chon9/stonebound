@@ -3,6 +3,7 @@ import argparse
 import json
 import mimetypes
 import os
+import re
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -43,13 +44,43 @@ def make_handler(app):
             if not target.is_relative_to(WEB) or not target.is_file():
                 return self.send_error(404)
             data = target.read_bytes()
-            self.send_response(200)
+            total = len(data)
+            start, end = 0, total - 1
+            audio = target.suffix.lower() == '.mp3'
+            byte_range = self.headers.get('Range') if audio else None
+            if byte_range:
+                match = re.fullmatch(r'bytes=(\d*)-(\d*)', byte_range)
+                valid = bool(match and any(match.groups()))
+                if valid:
+                    first, last = match.groups()
+                    if first:
+                        start = int(first)
+                        end = min(int(last), total-1) if last else total-1
+                    else:
+                        start = max(0, total-int(last))
+                    valid = 0 <= start <= end < total
+                if not valid:
+                    self.send_response(416)
+                    self.send_header('Content-Range', f'bytes */{total}')
+                    self.send_header('Content-Length', '0')
+                    self.end_headers()
+                    return
+                data = data[start:end+1]
+            self.send_response(206 if byte_range else 200)
             self.send_header("Content-Type", mimetypes.guess_type(str(target))[0] or "application/octet-stream")
             self.send_header("Content-Length", str(len(data)))
+            if audio:
+                self.send_header('Accept-Ranges', 'bytes')
+            if byte_range:
+                self.send_header('Content-Range', f'bytes {start}-{end}/{total}')
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
-            self.wfile.write(data)
+            try:
+                self.wfile.write(data)
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                # Media players may stop a preload or skip a track mid-transfer.
+                pass
 
         def _valid_host(self):
             return self.headers.get("Host", "").lower() in {f"localhost:{self.server.server_port}", f"127.0.0.1:{self.server.server_port}"}

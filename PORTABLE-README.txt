@@ -21,6 +21,15 @@ earned by completing chapters. New materials appear on the actual Go board.
 8章、24位棋友、48件藏品、16篇漫画（共48格）。每章三场胜利解锁结章与专属纪念品。
 故事册可重看已解锁漫画，漫画对白可即时切换中英文。旧存档自动补发已完成章节纪念品。
 
+BACKGROUND MUSIC / 背景音乐
+Four CC0 tracks by The Cynic Project play in a looping playlist, bundled for
+offline use. Music starts after your first interaction at 22% volume. Use the
+musical-note button to pause/resume, or Settings to adjust volume and select
+tracks. Stone sounds and music have separate switches. Preferences are saved.
+内含The Cynic Project的四首CC0音乐，约九分半钟循环播放，可离线聆听。
+首次操作后开始播放，默认音量22%。顶部音符按钮可暂停／继续，设置中可调音量和选曲。
+音乐与落子音效独立控制，偏好随存档保存。完整曲目来源见MUSIC.md。
+
 PORTABLE SAVES
 Everything stays in the data folder beside the EXE, including save.json,
 engine caches and webview state. Move the EXE and data folder together.

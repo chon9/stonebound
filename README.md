@@ -51,7 +51,23 @@ These are screenshots of the playable game. Click an image to see it full size.
 | **A board that becomes yours** | Collect 24 boards and 24 stone sets: porcelain, sea glass, star charts, kintsugi, jade and more. Preview materials, then play with them. |
 | **Keepsakes you earn** | Finish each chapter’s three encounters to receive its exclusive keepsake. Victories also earn coins for the treasury. |
 | **Room to learn** | Choose 9×9, 13×13 or 19×19. Take your time, ask KataGo for a hint, or undo a move. |
+| **Quiet moves, quiet music** | Four bundled CC0 tracks with automatic playlist looping, independent volume and track controls. Works offline. |
 | **Your language, your pace** | English and Simplified Chinese throughout the UI, conversations and manga. Progress, equipment and preferences save automatically. |
+
+## A soundtrack for quiet moves
+
+Soft piano, ambient pads and gentle bells accompany the journey. Four **CC0** recordings by **The Cynic Project** repeat in a roughly 9½-minute playlist, bundled inside the game for offline play. [Track credits and source licenses →](MUSIC.md)
+
+Music starts with your first interaction at a quiet default volume. The header’s musical-note button pauses or resumes it; **Settings → Background music** offers volume, track selection and previous/next controls. Music and stone sounds are independent, and your preferences are saved. Menu, comic and game transitions keep the same player running.
+
+四首舒缓的CC0音乐随游戏提供，约九分半钟循环播放。顶部音符按钮可暂停／继续；**设置 → 背景音乐**可调节音量、选曲或切换上一首／下一首。音乐与落子音效独立控制，支持离线聆听。
+
+<details>
+<summary>See the soundtrack controls · 查看音乐控制画面</summary>
+
+![Background-music playlist and volume controls](docs/screenshots/music.png)
+
+</details>
 
 ## Portable Windows game
 
@@ -166,7 +182,7 @@ $env:STONEBOUND_DATA_DIR = "$PWD/.runtime/browser-test"
 npm run test:browser
 ```
 
-The browser suite checks both languages, dialogue/items/rules, reload persistence, actual AI replies, hints, undo, keyboard play, saved results, mobile layouts and the absence of external runtime requests. The integration suite plays a complete real-engine game, checks victory rewards and purchases, then verifies backend restart with an active match.
+The browser suite checks music continuity during real games, both languages, dialogue/items/rules, reload persistence, actual AI replies, hints, undo, keyboard play, saved results, mobile layouts and the absence of external runtime requests. The integration suite plays a complete real-engine game, checks victory rewards and purchases, then verifies backend restart with an active match.
 
 The full-campaign visual suite uses an explicitly seeded test fixture, separate from actual-game verification:
 
@@ -180,6 +196,13 @@ node tests/campaign-browser.mjs
 
 The fixture checks all portraits, 16 manga pages, bilingual reader navigation and read persistence, 48 material previews, keepsakes and mobile layouts. `expanded-ai.py` verifies actual KaTrain turns for new intermediate and final dan targets on 13×13 and 19×19.
 
+The music suite checks actual MP3 decoding, first-interaction playback, automatic next-track and playlist wrap, pause/volume/track persistence, independent stone sounds, bilingual/mobile controls, failed-file recovery and local HTTP byte ranges:
+
+```powershell
+$env:STONEBOUND_TEST_URL = "http://127.0.0.1:8766"
+node tests/music-browser.mjs
+```
+
 The EXE also supports isolated package verification without installing Python:
 
 ```powershell
@@ -189,6 +212,6 @@ release/Stonebound.exe --window-test window-report.json --data-dir .runtime/wind
 
 `--self-test` requires a fresh test save. It initializes the embedded CPU engine and plays a real AI turn. `--window-test` opens a hidden native window, checks that the lobby rendered, writes a JSON report and closes. These modes are for development; normal play needs no command line.
 
-Verified for this release: 22 rule/scoring/progression/preference/campaign tests; bilingual browser gameplay and mobile layouts; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
+Verified for this release: 26 rule/scoring/progression/preference/campaign/music tests; bilingual browser gameplay and mobile layouts; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
 
 Original generated artwork and prompts are recorded in [ASSETS.md](ASSETS.md). Upstream notices and bundled-font licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

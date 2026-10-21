@@ -17,3 +17,5 @@ The revised interaction layout references the full-screen presentation of https:
 The bundled Latin variable fonts DM Sans and Manrope are distributed under the SIL Open Font License 1.1. Their complete notices are retained beside the font files in `web/assets/fonts/dmsans-OFL.txt` and `web/assets/fonts/manrope-OFL.txt`. The optional `scripts/fetch-fonts.py` retrieves them from Google Fonts; gameplay makes no request to Google Fonts.
 
 The city and character illustrations are original AI-generated assets, not downloaded CC0 assets. Their prompts and generation method are recorded in `ASSETS.md`. They depict original characters and places.
+
+Background music consists of four unmodified recordings by The Cynic Project / cynicmusic.com / pixelsphere.org, released under CC0 1.0 Universal on their individual OpenGameArt pages. Full track credits and source links are retained in `MUSIC.md`, recording hashes and download metadata in `web/assets/music/playlist.json`, and the CC0 text in `resources/licenses/music/CC0-1.0.txt`. The music is embedded for offline playback.

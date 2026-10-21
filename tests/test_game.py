@@ -119,6 +119,42 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(restored.data["coins"], 925)
         self.assertEqual(restored.data["language"], "en")
         self.assertTrue(restored.data["sound"])
+        self.assertTrue(restored.data['music'])
+        self.assertEqual(restored.data['music_volume'],.22)
+        self.assertEqual(restored.data['music_track'],'vaporware')
+
+    def test_music_preferences_survive_reload_independently_of_stone_sounds(self):
+        app = Stonebound.__new__(Stonebound)
+        app.lock, app.progress = threading.RLock(), self.progress
+        app.settings({'sound':False,'music':True,'music_volume':.37,'music_track':'another-august'})
+        restored=Progress(self.progress.path)
+        self.assertFalse(restored.data['sound'])
+        self.assertTrue(restored.data['music'])
+        self.assertEqual(restored.data['music_volume'],.37)
+        self.assertEqual(restored.data['music_track'],'another-august')
+        app.settings({'music':False})
+        self.assertFalse(Progress(self.progress.path).data['music'])
+        self.assertEqual(self.progress.data['coins'],150)
+
+    def test_invalid_music_preferences_are_rejected_atomically(self):
+        app = Stonebound.__new__(Stonebound)
+        app.lock, app.progress = threading.RLock(), self.progress
+        invalid=[{'music':1},{'music':'on'},{'music_volume':True},{'music_volume':-.01},
+                 {'music_volume':1.01},{'music_volume':float('nan')},{'music_volume':float('inf')},
+                 {'music_volume':'0.5'},{'music_track':'https://example.com/music.mp3'},
+                 {'music_track':[]},{'music_track':None}]
+        for values in invalid:
+            with self.subTest(values=values):
+                before=self.progress.snapshot()
+                with self.assertRaises(ValueError): app.settings({'language':'zh-CN',**values})
+                self.assertEqual(self.progress.snapshot(),before)
+
+    def test_zero_and_full_music_volume_are_valid(self):
+        app = Stonebound.__new__(Stonebound)
+        app.lock, app.progress = threading.RLock(), self.progress
+        for volume in (0,1):
+            app.settings({'music_volume':volume})
+            self.assertEqual(Progress(self.progress.path).data['music_volume'],volume)
 
 
 class ScoringTests(unittest.TestCase):

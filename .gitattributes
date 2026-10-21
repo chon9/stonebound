@@ -11,5 +11,6 @@
 *.png binary
 *.ico binary
 *.woff2 binary
+*.mp3 binary
 resources/licenses/** -text
 web/assets/fonts/*-OFL.txt -text

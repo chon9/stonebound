@@ -1,0 +1,63 @@
+{
+  "playlist": "Quiet moves",
+  "license_checked": "2026-10-21",
+  "credit": "The Cynic Project / cynicmusic.com / pixelsphere.org",
+  "tracks": [
+    {
+      "id": "vaporware",
+      "title": "Vaporware",
+      "title_zh": "云间琴声",
+      "artist": "The Cynic Project",
+      "file": "/assets/music/vaporware.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://opengameart.org/content/calm-piano-1-vaporware",
+      "download_url": "https://opengameart.org/sites/default/files/003_Vaporware_2.mp3",
+      "duration": 164.99,
+      "bytes": 6604773,
+      "sha256": "1697fa1b7ed6f3fe1eca4daa4f9d1a2eb3db8fe40a0f3c283529ab47e57b5b38"
+    },
+    {
+      "id": "another-august",
+      "title": "Another August",
+      "title_zh": "又一个八月",
+      "artist": "The Cynic Project",
+      "file": "/assets/music/another-august.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://opengameart.org/content/another-august",
+      "download_url": "https://opengameart.org/sites/default/files/013_Another_August_0.mp3",
+      "duration": 206.6,
+      "bytes": 8269313,
+      "sha256": "6de6e4f770cda4d34db433e4df982deccb6877a8fcc5e32b48eeb57f770dec3b"
+    },
+    {
+      "id": "synthwave-4k",
+      "title": "Synthwave 4k",
+      "title_zh": "静谧涟漪",
+      "artist": "The Cynic Project",
+      "file": "/assets/music/synthwave-4k.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://opengameart.org/content/calm-ambient-1-synthwave-4k",
+      "download_url": "https://opengameart.org/sites/default/files/001_Synthwave_4k_0.mp3",
+      "duration": 157.94,
+      "bytes": 6322668,
+      "sha256": "56b31f997020da1abd4092f5e82457592323717a23e4d560c5f8135d26c3b8be"
+    },
+    {
+      "id": "happy-lullaby",
+      "title": "Happy Lullaby",
+      "title_zh": "晚风摇篮曲",
+      "artist": "The Cynic Project",
+      "file": "/assets/music/happy-lullaby.mp3",
+      "license": "CC0-1.0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://opengameart.org/content/happy-lullaby-song17",
+      "download_url": "https://opengameart.org/sites/default/files/song17.mp3",
+      "duration": 39.56,
+      "bytes": 442152,
+      "sha256": "9fa0b0e96860eace536fa36f4e9c2c1284db894a8df3cdaa19ddae429b1bfd42"
+    }
+  ]
+}

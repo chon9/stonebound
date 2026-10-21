@@ -1,4 +1,5 @@
 import copy
+import math
 import secrets
 import threading
 import time
@@ -8,6 +9,7 @@ from .engine import BaseGame, IllegalMoveException, KaTrainBridge, Move
 from .progress import Progress
 from .scoring import area_score
 from .story import story_snapshot
+from .music import TRACKS, TRACK_IDS
 
 
 class Stonebound:
@@ -58,6 +60,7 @@ class Stonebound:
                     "lastPass": bool(self.game.current_node.is_pass and self.game.current_node.parent),
                 })
             return {"profile": profile, "match": match, "opponents": OPPONENTS, "items": ITEMS,
+                    "music": TRACKS,
                     "story": story_snapshot(profile['defeated'], profile['story_seen']),
                     "engine": {"status": self.bridge.status, "error": self.bridge.error, "name": "KaTrain · KataGo", "strategy": "KaTrain calibrated rank"}}
 
@@ -89,6 +92,20 @@ class Stonebound:
                 if type(values["sound"]) is not bool:
                     raise ValueError("Sound must be on or off.")
                 updates["sound"] = values["sound"]
+            if "music" in values:
+                if type(values["music"]) is not bool:
+                    raise ValueError("Music must be on or off.")
+                updates["music"] = values["music"]
+            if "music_volume" in values:
+                volume = values["music_volume"]
+                if type(volume) not in (int, float) or not math.isfinite(volume) or not 0 <= volume <= 1:
+                    raise ValueError("Music volume must be between 0 and 100 percent.")
+                updates["music_volume"] = volume
+            if "music_track" in values:
+                track = values["music_track"]
+                if not isinstance(track, str) or track not in TRACK_IDS:
+                    raise ValueError("Choose a track from the soundtrack.")
+                updates["music_track"] = track
             self.progress.data.update(updates)
             self.progress.save()
 
