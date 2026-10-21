@@ -5,7 +5,7 @@ import threading
 import time
 
 from .catalog import ITEMS, OPPONENTS, OPPONENT_BY_ID
-from .engine import BaseGame, IllegalMoveException, KaTrainBridge, Move
+from .engine import BaseGame, IllegalMoveException, KaTrainBridge, Move, backend_options
 from .progress import Progress
 from .scoring import area_score
 from .story import story_snapshot
@@ -17,7 +17,12 @@ class Stonebound:
     def __init__(self, save_path):
         self.lock = threading.RLock()
         self.progress = Progress(save_path)
-        self.bridge = KaTrainBridge()
+        self.bridge = KaTrainBridge(self.progress.data.get('ai_backend'))
+        self.engine_switching = False
+        self.engine_target = None
+        self.engine_switch_error = None
+        self._closing = False
+        self._pending_bridge = None
         self.game = None
         self.match = None
         self.initialized = threading.Event()
@@ -72,10 +77,15 @@ class Stonebound:
                     "music": TRACKS,
                     "story": story_snapshot(profile['defeated'], profile['story_seen']),
                     "sensei": spirit_story(profile['defeated'], profile['sensei_seen']),
-                    "engine": {"status": self.bridge.status, "error": self.bridge.error, "name": "KaTrain · KataGo", "strategy": "KaTrain calibrated rank"}}
+                    "engine": {"status": 'starting' if self.engine_switching else self.bridge.status,
+                               "error": self.bridge.error, "backend": self.bridge.backend,
+                               "switching": self.engine_switching, "target": self.engine_target,
+                               "switchError": self.engine_switch_error, "available": backend_options(),
+                               "name": "KaTrain · KataGo", "strategy": "KaTrain calibrated rank"}}
 
     def start(self, opponent_id, size):
         with self.lock:
+            self._require_engine_idle()
             self.bridge.require_ready()
             if self.match and not self.match.get("finished"):
                 raise ValueError("You have a game in progress. Resume it or leave it first.")
@@ -117,10 +127,104 @@ class Stonebound:
                 if not isinstance(track, str) or track not in TRACK_IDS:
                     raise ValueError("Choose a track from the soundtrack.")
                 updates["music_track"] = track
+            target = values.get('ai_backend')
+            if 'ai_backend' in values:
+                if not isinstance(target, str) or target not in ('cpu', 'gpu'):
+                    raise ValueError('Choose CPU or GPU.')
+                self._require_engine_idle()
+                if self.bridge.status == 'starting':
+                    raise ValueError('Wait for the AI to finish starting before switching engines.')
+                if self.match and self.match['thinking']:
+                    raise ValueError('Wait for your rival to finish thinking before switching engines.')
+                if not backend_options()[target]:
+                    raise ValueError(f'The {target.upper()} engine is not installed.')
             self.progress.data.update(updates)
             self.progress.save()
+            if target:
+                already_running = target == self.bridge.backend and self.bridge.status == 'ready'
+                if already_running:
+                    try:
+                        self.bridge.require_ready()
+                    except (ValueError, RuntimeError):
+                        already_running = False
+                if already_running:
+                    self.progress.data['ai_backend'] = target
+                    self.engine_switch_error = None
+                    self.progress.save()
+                else:
+                    self._switch_engine(target)
+
+    def _require_engine_idle(self):
+        if getattr(self, 'engine_switching', False):
+            raise ValueError('The AI is switching engines. Your board is saved.')
+
+    def _switch_engine(self, target):
+        """Prepare a replacement without discarding a working engine or board."""
+        old_bridge = self.bridge
+        saved = copy.deepcopy(self.progress.data.get('match'))
+        self.engine_switching, self.engine_target, self.engine_switch_error = True, target, None
+
+        def work():
+            candidate = None
+            try:
+                candidate = KaTrainBridge(target)
+                with self.lock:
+                    if getattr(self, '_closing', False):
+                        raise RuntimeError('Engine switch cancelled.')
+                    self._pending_bridge = candidate
+                candidate.initialize()
+                if candidate.status != 'ready':
+                    raise RuntimeError(candidate.error or 'The selected engine could not start.')
+                restored = candidate.new_game(saved['size'], saved['moves']) if saved else None
+                with self.lock:
+                    if getattr(self, '_closing', False):
+                        raise RuntimeError('Engine switch cancelled.')
+                    old_game, old_match = self.game, copy.deepcopy(self.match)
+                    old_profile = self.progress.snapshot()
+                    try:
+                        self.bridge, self.game = candidate, restored
+                        self.progress.data['ai_backend'] = target
+                        if saved and self.match is None:
+                            self.match = {**saved, 'thinking': False, 'hint': None, 'sensei': None, 'error': None}
+                        if self.match:
+                            self.match['hint'] = self.match['sensei'] = self.match['error'] = None
+                        self._persist_match()
+                    except Exception:
+                        self.bridge, self.game, self.match = old_bridge, old_game, old_match
+                        self.progress.data = old_profile
+                        raise
+                    self.engine_switching, self.engine_target = False, None
+                    self._pending_bridge = None
+                    if self.match and not self.match['finished'] and restored.current_node.next_player == 'W':
+                        self._start_turn()
+                candidate = None  # ownership has transferred to the app
+                try:
+                    old_bridge.close()
+                except Exception:
+                    pass  # A stopped previous process must not undo a successful switch.
+            except Exception as exc:
+                with self.lock:
+                    self.engine_switch_error = f'{target.upper()} could not start. Your previous engine and board were kept. {exc}'
+                    self.engine_switching, self.engine_target = False, None
+            finally:
+                if candidate:
+                    candidate.close()
+                with self.lock:
+                    if getattr(self, '_pending_bridge', None) is candidate:
+                        self._pending_bridge = None
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def close(self):
+        with self.lock:
+            self._closing = True
+            bridges = [self.bridge, self._pending_bridge]
+        for bridge in bridges:
+            if bridge:
+                bridge.close()
 
     def _require_game(self, player_turn=True):
+        self._require_engine_idle()
         if not self.game or not self.match or self.match.get("finished"):
             raise ValueError("Start a new game in the city.")
         if self.match["thinking"]:
@@ -129,20 +233,16 @@ class Stonebound:
             raise ValueError("Retry your rival's turn before playing.")
 
     def play(self, point):
-        # Finish the BEFORE evaluation without holding the app lock. Capture it
-        # before child analysis can update the parent's candidate statistics.
         with self.lock:
             self._require_game()
-            game, node = self.game, self.game.current_node
-        self.bridge.wait_analysis(node)
-        with self.lock:
-            self._require_game()
-            if self.game is not game or self.game.current_node is not node:
-                raise ValueError('The board changed. Choose your move again.')
             if point is not None and (not isinstance(point, list) or len(point) != 2 or any(type(v) is not int for v in point) or any(v < 0 or v >= self.match["size"] for v in point)):
                 raise ValueError("Choose an intersection on the board.")
+            node = self.game.current_node
             move = Move(coords=tuple(point) if point is not None else None, player="B")
-            before = (node.score, node.candidate_moves[0]['move']) if node.candidate_moves else None
+            # Use completed analysis if available, but never make placing a stone
+            # wait for KataGo. The turn worker completes the coaching baseline.
+            candidates = node.candidate_moves if node.analysis_complete else []
+            before = (node.score, candidates[0]['move']) if candidates else None
             try:
                 self.game.play(move)
             except IllegalMoveException as exc:
@@ -151,9 +251,9 @@ class Stonebound:
             self.match['sensei'] = self.match['review'] = self.match['territory'] = None
             self.match["error"] = None
             self._persist_match()
-            self._start_turn(before)
+            self._start_turn(before, previous=node)
 
-    def _start_turn(self, before=None):
+    def _start_turn(self, before=None, previous=None):
         self.match["thinking"] = True
         token = self.match["id"]
         game = self.game
@@ -163,9 +263,15 @@ class Stonebound:
             try:
                 node = game.current_node
                 review = None
-                if before and node.move and node.move.player == 'B':
+                baseline = before
+                if baseline is None and previous is not None:
+                    self.bridge.wait_analysis(previous)
+                    candidates = previous.candidate_moves
+                    if candidates:
+                        baseline = (previous.score, candidates[0]['move'])
+                if baseline and node.move and node.move.player == 'B':
                     self.bridge.wait_analysis(node)
-                    review = review_move(before[0], node.score, node.move.gtp(), before[1], node.depth)
+                    review = review_move(baseline[0], node.score, node.move.gtp(), baseline[1], node.depth)
                 if not (node.is_pass and node.parent and node.parent.is_pass):
                     _, played = self.bridge.play_rival(game, rival)
                     if played is None:
@@ -233,6 +339,7 @@ class Stonebound:
 
     def abandon(self):
         with self.lock:
+            self._require_engine_idle()
             if self.match and self.match["thinking"]:
                 raise ValueError("Wait for your rival to finish thinking before leaving.")
             self.bridge.engine.on_new_game() if self.bridge.engine else None

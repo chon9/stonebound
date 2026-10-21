@@ -152,7 +152,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        app.bridge.close()
+        app.close()
         server.server_close()
 
 

@@ -15,7 +15,7 @@ def new_profile():
         "defeated": [], "owned": ["hinoki", "classic"],
         "equipped": {"board": "hinoki", "stones": "classic"},
         "journal": [], "match": None, "language": "en", "sound": True, "story_seen": [],
-        "music": True, "music_volume": 0.22, "music_track": "vaporware", "sensei_seen": [],
+        "music": True, "music_volume": 0.22, "music_track": "vaporware", "sensei_seen": [], "ai_backend": None,
     }
 
 

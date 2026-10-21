@@ -161,7 +161,7 @@ def main():
             if not result.get('ok'):
                 raise RuntimeError(result.get('error', 'Native window verification failed.'))
     finally:
-        app.bridge.close()
+        app.close()
         if server:
             # serve_forever runs in a separate thread in the windowed version.
             if not args.serve:

@@ -35,15 +35,23 @@ from katrain.core.utils import find_package_resource
 engine_module.DATA_FOLDER = str(RUNTIME / "katago")
 
 
+def backend_options():
+    return {"cpu": (ROOT / "resources/cpu/katago.exe").is_file(),
+            "gpu": Path(find_package_resource("katrain/KataGo/katago.exe")).is_file()}
+
+
 class GameContext(KaTrainBase):
-    def __init__(self):
+    def __init__(self, backend=None):
+        if backend not in (None, 'cpu', 'gpu'):
+            raise ValueError('Choose CPU or GPU.')
+        self.backend = backend or ('cpu' if FROZEN else 'gpu')
         self._config = json.loads(Path(find_package_resource("katrain/config.json")).read_text(encoding="utf-8"))
         self._config["game"].update({"size": "9", "komi": 6.5, "handicap": 0, "rules": "chinese"})
         self._config["engine"].update({"max_visits": 64, "fast_visits": 16, "max_time": 1.5, "allow_recovery": False})
         # The portable build starts with generic CPU KataGo, requiring no GPU driver.
         # It uses the same upstream KaTrain model and calibrated AI strategy.
         cpu_engine = ROOT / "resources/cpu/katago.exe"
-        if FROZEN and cpu_engine.exists():
+        if self.backend == 'cpu':
             self._config["engine"].update({"katago": str(cpu_engine), "max_visits": 16, "fast_visits": 8, "max_time": 2.0})
         config_path = INSTALL_DIR / "engine-config.json"
         if config_path.exists():
@@ -52,6 +60,15 @@ class GameContext(KaTrainBase):
         for env, field in (("KATAGO_EXECUTABLE", "katago"), ("KATAGO_MODEL", "model"), ("KATAGO_CONFIG", "config")):
             if os.environ.get(env):
                 self._config["engine"][field] = os.environ[env]
+        if backend:
+            # An explicit in-game choice selects the bundled executable. Keep
+            # model/search configuration, but never run an old custom command.
+            executable = cpu_engine if backend == 'cpu' else Path(find_package_resource('katrain/KataGo/katago.exe'))
+            if not executable.is_file():
+                raise ValueError(f'The {backend.upper()} engine is not installed.')
+            self._config['engine'].update(katago=str(executable), backend='local', altcommand='', remote_url='')
+        elif config_path.exists() or os.environ.get('KATAGO_EXECUTABLE'):
+            self.backend = 'custom'
         # Keep all engine caches inside the project.
         self._config["engine"]["allow_recovery"] = False
         self.players_info = {"B": Player("B"), "W": Player("W", PLAYER_AI, AI_RANK)}
@@ -70,13 +87,15 @@ class GameContext(KaTrainBase):
 
 
 class KaTrainBridge:
-    def __init__(self):
-        self.context = GameContext()
+    def __init__(self, backend=None):
+        self.context = GameContext(backend)
+        self.backend = self.context.backend
         self.engine = None
         self.status = "starting"
         self.error = None
         self.ready = threading.Event()
         self.init_lock = threading.Lock()
+        self.closed = threading.Event()
 
     def initialize(self):
         with self.init_lock:
@@ -84,6 +103,8 @@ class KaTrainBridge:
                 return
             self.status, self.error = "starting", None
             try:
+                if self.closed.is_set():
+                    raise RuntimeError('Engine startup cancelled.')
                 self.engine = KataGoEngine(self.context, copy.deepcopy(self.context.config("engine")))
                 node = GameNode(properties={"SZ": 9, "KM": 6.5, "RU": "chinese"})
                 finished = threading.Event()
@@ -96,11 +117,16 @@ class KaTrainBridge:
                 self.engine.request_analysis(node, received, error_callback=lambda result: (error.append(str(result)), finished.set()), visits=2)
                 deadline = time.monotonic() + 240
                 while not finished.wait(0.2):
-                    self.engine.check_alive(exception_if_dead=True)
+                    if self.closed.is_set():
+                        raise RuntimeError('Engine startup cancelled.')
+                    if not self.engine.check_alive(exception_if_dead=True):
+                        raise RuntimeError('KataGo could not start. ' + ' '.join(self.context.errors[-3:]))
                     if time.monotonic() > deadline:
                         raise TimeoutError("KataGo startup took too long. Check the engine configuration and GPU drivers.")
                 if error:
                     raise RuntimeError(error[0])
+                if self.closed.is_set():
+                    raise RuntimeError('Engine startup cancelled.')
                 self.status = "ready"
                 self.ready.set()
             except Exception as exc:
@@ -112,7 +138,8 @@ class KaTrainBridge:
     def require_ready(self):
         if self.status != "ready":
             raise ValueError(self.error or "KataGo is warming up. Your first game will be ready shortly.")
-        self.engine.check_alive(exception_if_dead=True)
+        if not self.engine.check_alive(exception_if_dead=True):
+            raise ValueError('KataGo stopped. Choose CPU or GPU again in Settings to restart it.')
 
     def new_game(self, size, moves=None):
         self.require_ready()
@@ -128,7 +155,8 @@ class KaTrainBridge:
     def wait_analysis(self, node, timeout=45):
         deadline = time.monotonic() + timeout
         while not node.analysis_complete:
-            self.engine.check_alive(exception_if_dead=True)
+            if not self.engine.check_alive(exception_if_dead=True):
+                raise RuntimeError('KataGo stopped. Choose CPU or GPU again in Settings to restart it.')
             if time.monotonic() > deadline:
                 raise TimeoutError("KataGo is taking longer than expected. You can retry this turn.")
             time.sleep(0.02)
@@ -140,5 +168,6 @@ class KaTrainBridge:
         return generate_ai_move(game, AI_RANK, settings)
 
     def close(self):
+        self.closed.set()
         if self.engine:
             self.engine.shutdown()

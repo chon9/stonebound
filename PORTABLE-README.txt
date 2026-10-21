@@ -62,9 +62,20 @@ artwork are embedded. The portable build defaults to the generic x64 CPU engine,
 so a dedicated GPU or OpenCL driver is not required. CPU turns can be slower.
 内含Python、KaTrain核心、KataGo及模型、字体与美术。默认使用通用CPU引擎，无需独立显卡。
 
-For faster play on compatible hardware, place engine-config.json beside the EXE
-and point its katago, model and config fields to your existing KataGo installation.
-This changes acceleration, not the KaTrain AI strategy. Paths must be absolute.
+Choose Settings > AI processor > CPU / GPU to switch without losing the current
+board. The choice is saved after successful startup. GPU uses bundled OpenCL
+KataGo and needs compatible graphics drivers; first startup may take a few
+minutes to tune. A failed switch keeps the previous engine and board.
+设置 > AI运算设备可选择CPU或GPU，保留当前棋局，切换成功后自动保存选择。
+GPU需要支持OpenCL的显卡驱动，首次启动可能需要数分钟调优。失败时保留原引擎。
+
+19x19 stone placement no longer waits for engine analysis. Your stone appears
+immediately while Sensei and your rival think in the background.
+19路落子不再等待引擎分析，棋子立即显示，师父与对手继续在后台思考。
+
+Advanced users can still configure custom model/search settings using
+engine-config.json beside the EXE. An explicit in-game choice selects the
+bundled executable, overriding a custom executable path.
 
 SCORING
 Chinese area scoring, 6.5 komi. Play out unsettled groups before both players pass.

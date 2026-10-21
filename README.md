@@ -95,7 +95,7 @@ Music starts with your first interaction at a quiet default volume. The header�
 
 Download **[Stonebound-Windows-x64.zip](https://github.com/chon9/stonebound/releases/latest/download/Stonebound-Windows-x64.zip)** from GitHub Releases, extract it into a writable folder, and double-click **`Stonebound.exe`**. The local build is also available at `release/Stonebound.exe`. No Python, Git, Node, terminal, or setup commands are required on the playing computer.
 
-The executable opens a dedicated desktop window. It embeds the Python runtime, unmodified pinned KaTrain core, KataGo, its neural-network model, original artwork, fonts, and both languages. It defaults to the generic x64 **CPU** version of KataGo, which works without a dedicated GPU or OpenCL driver. CPU turns can take longer than GPU turns.
+The executable opens a dedicated desktop window. It embeds the Python runtime, unmodified pinned KaTrain core, KataGo, its neural-network model, original artwork, fonts, and both languages. It defaults to the generic x64 **CPU** version of KataGo, which works without a dedicated GPU or OpenCL driver. Choose **Settings → AI processor → CPU / GPU** to switch to the bundled OpenCL GPU engine. CPU turns can take longer than GPU turns.
 
 Requires **Windows 10/11 x64 and Microsoft Edge WebView2**. WebView2 is already present on most current Windows installations; if missing, install Microsoft's [WebView2 Evergreen Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) once. The executable is unsigned. The first run needs a few seconds to unpack and load the model.
 
@@ -117,7 +117,7 @@ The redesign references the full-screen lobby and game navigation of [Little Kin
 - **Wardrobe:** preview and equip owned boards and stones.
 - **Chronicle:** eight story chapters, 18 bilingual manga pages (54 illustrated panels), eight ghost-master reflections, completed-game memories, XP and victories.
 - **Codex:** concise Go rules covering liberties, captures, territory, passes, hints and ko.
-- **Settings:** persistent language and sound preferences; engine status and failure details.
+- **Settings:** CPU/GPU selection, persistent language and sound preferences, engine status and failure details.
 
 The match screen presents the Go board with framed rival art, player indicators, a move counter, captured-stone counts, and concise controls. There are no analysis graphs or training tools in the play flow.
 
@@ -132,6 +132,19 @@ Boards and stones use shared canvas materials in the treasury and actual matches
 ## English and Chinese
 
 Use the top-right **简 / EN** button, or choose **English / 简体中文** in Settings. The interface, story dialogue, rival names, locations, cosmetic items, instructions, common gameplay errors and results are translated. Language and sound are saved in the player profile, so changing the native window's local port or moving the portable game does not reset them. Language can be changed during a match without changing the board.
+
+## Choose CPU or GPU
+
+Open **Settings → AI processor** and choose **CPU** or **GPU · OpenCL**. Both executables are bundled in the portable release. Your current board, story progress, coins and equipment stay intact; the successful choice is saved for future launches. Wait for the rival’s current turn to finish before switching.
+
+- **CPU:** works without a dedicated graphics card. This is the portable default.
+- **GPU:** uses the bundled OpenCL engine. Requires a supported graphics device and working OpenCL drivers. First startup may spend a few minutes tuning; a failed switch keeps the previous engine and position.
+
+**19×19 placement is immediate:** the board paints your submitted stone before the server replies, and the server accepts legal moves without waiting for Sensei’s analysis. Coaching and AI thinking continue in the background. Rejected moves remove the tentative stone, and duplicate clicks are blocked. The rival’s thinking time still depends on the processor and board size.
+
+在 **设置 → AI运算设备** 中选择 **CPU / GPU**。切换成功后自动记住选择，并保留当前棋局与进度；GPU启动失败则保留原引擎。19路落子不再等待师父分析，棋子会立即显示，AI在后台继续思考。
+
+![CPU and GPU selection in the in-game settings](docs/screenshots/engine-settings.png)
 
 ## Game rules and progression
 
@@ -158,7 +171,7 @@ f4981cf905cece90085ce4e3967415d0c16d525f
 
 The source checkout uses KaTrain's bundled OpenCL KataGo executable and `b10c384h6nbttflrs.bin.gz` model. The portable build adds the official generic x64 Eigen CPU executable from KataGo v1.18.1, verified against its published SHA-256. It uses the same KaTrain neural-network model and strategy.
 
-To use an existing GPU KataGo installation, place `engine-config.json` beside the EXE (or in the project root for source mode) using `engine-config.example.json` as a guide. Set absolute `katago`, `model` and `config` paths. `KATAGO_EXECUTABLE`, `KATAGO_MODEL`, and `KATAGO_CONFIG` environment variables also work. JSON accepts KaTrain's `max_visits`, `fast_visits` and `max_time`. Restart after changing engine configuration.
+For an advanced custom KataGo installation, place `engine-config.json` beside the EXE (or in the project root for source mode) using `engine-config.example.json` as a guide. Set absolute `katago`, `model` and `config` paths. `KATAGO_EXECUTABLE`, `KATAGO_MODEL`, and `KATAGO_CONFIG` environment variables also work. JSON accepts KaTrain's `max_visits`, `fast_visits` and `max_time`. Restart after changing engine configuration. A saved in-game CPU/GPU choice explicitly selects its bundled executable; custom model and search settings still apply. Remove the `ai_backend` preference from the backed-up save to return to automatic custom-executable selection.
 
 ## Run from source
 
@@ -225,6 +238,13 @@ $env:STONEBOUND_TEST_URL = "http://127.0.0.1:8766"
 node tests/music-browser.mjs
 ```
 
+The CPU/GPU browser suite requires a machine with a working OpenCL GPU. It verifies immediate 19×19 painting while a request is deliberately held, duplicate-click prevention, rejected-move rollback, real CPU and GPU turns, mid-game switching without changing the board, and bilingual/mobile settings. Run against an isolated source or packaged server:
+
+```powershell
+$env:STONEBOUND_TEST_URL = "http://127.0.0.1:8773"
+node tests/engine-browser.mjs
+```
+
 The ghost-master suite checks a real opening-pass mistake, calm feedback for the recommended move, current-position hints and ownership, undo invalidation, resignation estimates, bilingual spirit stories and mobile access. Run it against an isolated save with a ready engine. The final-territory suite uses the actual completed save written by `integration.py` in `.runtime/final-territory`.
 
 ```powershell
@@ -247,6 +267,6 @@ release/Stonebound.exe --window-test window-report.json --data-dir .runtime/wind
 
 `--self-test` requires a fresh test save. It initializes the embedded CPU engine, plays a real AI turn and asks Sensei for a recommendation and 81-point ownership map. `--window-test` opens a hidden native window, checks the lobby, both manga readers and bundled MP3 decoding, writes a JSON report and closes. These modes are for development; normal play needs no command line.
 
-Verified for this release: 34 rule/scoring/progression/preference/campaign/music/mentor tests; bilingual browser gameplay and mobile layouts; real KataGo mistake coaching, territory overlays and completed-game map/count agreement; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
+Verified for this release: 48 rule/scoring/progression/preference/campaign/music/mentor/processor/placement tests; bilingual browser gameplay and mobile layouts; real KataGo mistake coaching, territory overlays and completed-game map/count agreement; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
 
 Original generated artwork and prompts are recorded in [ASSETS.md](ASSETS.md). Upstream notices and bundled-font licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

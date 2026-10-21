@@ -32,4 +32,6 @@ if (Get-Command uv -ErrorAction SilentlyContinue) {
     & $pythonExe -m pip install -r requirements.txt
 }
 if ($LASTEXITCODE -ne 0) { throw 'Could not install the KaTrain core dependencies.' }
+& $pythonExe scripts/fetch-cpu-engine.py
+if ($LASTEXITCODE -ne 0) { throw 'Could not prepare the CPU engine.' }
 Write-Host 'Stonebound is ready. Open Start-Stonebound.cmd to play.'
