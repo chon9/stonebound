@@ -78,7 +78,11 @@ engine-config.json beside the EXE. An explicit in-game choice selects the
 bundled executable, overriding a custom executable path.
 
 SCORING
+Passing skips your turn; it does not concede. Choose Resign to give up.
+Two consecutive passes end the game. The AI now accepts settled endings using
+a KataGo friendly-pass check, avoiding pointless own-territory/dead-stone cleanup.
 Chinese area scoring, 6.5 komi. Play out unsettled groups before both players pass.
+停一手并非认输，放弃本局请选择「认输」。AI会接受已走清的终局，避免无意义填地。
 采用中国规则，贴6.5目。双方停着前，请先走清尚未确定死活的棋块。
 
 TROUBLESHOOTING

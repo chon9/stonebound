@@ -150,7 +150,13 @@ Open **Settings → AI processor** and choose **CPU** or **GPU · OpenCL**. Both
 
 Play black against 24 increasingly strong KaTrain rivals (15 kyu through a configured 4 dan target) on **9×9, 13×13 or 19×19** boards. Captures, suicide prevention and ko use upstream KaTrain rules. Undo reverses your last move and the AI reply; hints come from KataGo analysis. No time limit.
 
-Two consecutive passes end a game. **Chinese area scoring** counts live stones and enclosed empty points, with **6.5 komi** for white. KataGo ownership identifies confidently dead stones; uncertain groups count as alive. **Play out unsettled groups before passing.** There is no manual dead-stone adjudication screen yet.
+Passing skips a turn; it does **not** concede the game. Choose **Resign** to give up. Two consecutive passes end a game. **Chinese area scoring** counts live stones and enclosed empty points, with **6.5 komi** for white. KataGo ownership identifies confidently dead stones; uncertain groups count as alive. **Play out unsettled groups before passing.** There is no manual dead-stone adjudication screen yet.
+
+The rival now respects a searched KataGo pass, instead of letting the weakened rank policy replace it with another move. After you pass on a settled board, an additional friendly-pass check verifies confident territory, completed boundaries and no remaining dame, then compares actual KataGo evaluations after passing and after playing on. It accepts the ending when continued play has no meaningful gain; useful endgame moves and unsettled groups still require play.
+
+This adapts the behavior of [KataGo’s GTP friendly-pass check](https://github.com/lightvector/KataGo/blob/v1.18.1/cpp/program/playutils.cpp#L1029) to the KaTrain analysis interface, using the same conservative dead-chain handling as Stonebound’s final count. A short explanation appears when the rival continues after your pass.
+
+停一手并非认输；放弃本局请选择「认输」。棋局已经走清时，AI会比较继续落子与停着的KataGo评估，避免无意义地填自己的地盘或逐一提掉已确认的死子。尚有公气、官子或死活未定时，仍会继续下。
 
 First wins earn 250–1,405 coins and unlock the next rival. Repeat wins earn 80 coins. Losses award 25 XP. Rewards and purchases are validated and saved by the backend; browser-provided scores do not award wins. Collect 24 boards and 24 stone sets: 40 shop catalog entries (including the two starting items) and eight chapter-completion keepsakes. Keepsakes require beating all three rivals in their chapter; they cannot be purchased. This is a local single-player game with no accounts, payments, or multiplayer.
 
@@ -245,6 +251,8 @@ $env:STONEBOUND_TEST_URL = "http://127.0.0.1:8773"
 node tests/engine-browser.mjs
 ```
 
+The endgame browser regression (`node tests/endgame-browser.mjs`) expects an isolated settled game with Black to move at `STONEBOUND_TEST_URL` (default port 8776). It checks that one player pass receives the rival’s pass and produces the final territory, then starts a fresh game to check that an opening pass does not force an ending, that pass guidance is bilingual, and that resignation still concedes. Structural and evaluation edge cases are covered in `tests/test_endgame.py`.
+
 The ghost-master suite checks a real opening-pass mistake, calm feedback for the recommended move, current-position hints and ownership, undo invalidation, resignation estimates, bilingual spirit stories and mobile access. Run it against an isolated save with a ready engine. The final-territory suite uses the actual completed save written by `integration.py` in `.runtime/final-territory`.
 
 ```powershell
@@ -267,6 +275,6 @@ release/Stonebound.exe --window-test window-report.json --data-dir .runtime/wind
 
 `--self-test` requires a fresh test save. It initializes the embedded CPU engine, plays a real AI turn and asks Sensei for a recommendation and 81-point ownership map. `--window-test` opens a hidden native window, checks the lobby, both manga readers and bundled MP3 decoding, writes a JSON report and closes. These modes are for development; normal play needs no command line.
 
-Verified for this release: 48 rule/scoring/progression/preference/campaign/music/mentor/processor/placement tests; bilingual browser gameplay and mobile layouts; real KataGo mistake coaching, territory overlays and completed-game map/count agreement; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
+Verified for this release: 60 rule/scoring/progression/preference/campaign/music/mentor/processor/placement tests; bilingual browser gameplay and mobile layouts; real KataGo mistake coaching, territory overlays and completed-game map/count agreement; native WebView2 rendering; and a relocated EXE running from a folder containing spaces and Chinese characters, with Python removed from PATH. The relocated build produced an actual KataGo reply and reopened with its saved Chinese preference. File size, SHA-256 and test reports are recorded in `release/BUILD-INFO.json`.
 
 Original generated artwork and prompts are recorded in [ASSETS.md](ASSETS.md). Upstream notices and bundled-font licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

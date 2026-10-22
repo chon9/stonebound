@@ -72,6 +72,9 @@ class Stonebound:
                     "captures": {"B": self.game.prisoner_count["W"], "W": self.game.prisoner_count["B"]},
                     "moveNumber": self.game.current_node.depth,
                     "lastPass": bool(self.game.current_node.is_pass and self.game.current_node.parent),
+                    "passedThenContinued": bool(self.game.current_node.move
+                        and self.game.current_node.move.player == 'W' and not self.game.current_node.is_pass
+                        and self.game.current_node.parent and self.game.current_node.parent.is_pass),
                 })
             return {"profile": profile, "match": match, "opponents": OPPONENTS, "items": ITEMS,
                     "music": TRACKS,

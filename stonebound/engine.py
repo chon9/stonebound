@@ -11,6 +11,8 @@ import threading
 import time
 from pathlib import Path
 
+from .endgame import pass_is_equivalent, settled_for_friendly_pass
+
 FROZEN = bool(getattr(sys, "frozen", False))
 ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
 INSTALL_DIR = Path(sys.executable).resolve().parent if FROZEN else ROOT
@@ -162,10 +164,59 @@ class KaTrainBridge:
             time.sleep(0.02)
 
     def play_rival(self, game, rival):
-        self.wait_analysis(game.current_node)
+        node = game.current_node
+        self.wait_analysis(node)
+        candidates = node.candidate_moves
+        if candidates:
+            best = Move.from_gtp(candidates[0]['move'], player=node.next_player)
+            # Rank calibration uses the raw policy; it must not override a
+            # searched pass or prolong a settled game with harmless cleanup.
+            searched_pass = best.is_pass
+            friendly_pass = (not searched_pass and node.is_pass and node.parent
+                             and settled_for_friendly_pass(game.board_size[0],
+                                 [[*s.coords, s.player] for s in game.stones],
+                                 node.ownership, node.score, node.next_player, best.coords)
+                             and pass_is_equivalent(node.next_player,
+                                 self._evaluate_after(node, Move(None, node.next_player)),
+                                 self._evaluate_after(node, best)))
+            if searched_pass or friendly_pass:
+                move = Move(None, node.next_player)
+                played = game.play(move, expected_node=node)
+                if played:
+                    played.ai_thoughts = ('KataGo searched pass.' if searched_pass else
+                                         'KataGo friendly pass: settled borders and no meaningful gain from continuing.')
+                return move, played
         settings = copy.deepcopy(self.context.config("ai")[AI_RANK])
         settings["kyu_rank"] = rival["kyu"]
         return generate_ai_move(game, AI_RANK, settings)
+
+    def _evaluate_after(self, node, move):
+        # Detached history: hypothetical continuations never touch the real board
+        # or feed child evaluation results back into its coaching statistics.
+        clone = GameNode(properties=copy.deepcopy(node.root.properties))
+        for ancestor in node.nodes_from_root[1:]:
+            clone = GameNode(parent=clone, properties=copy.deepcopy(ancestor.properties))
+        clone = GameNode(parent=clone, move=move)
+        finished, result, errors = threading.Event(), [], []
+
+        def received(analysis, partial):
+            if not partial:
+                result.append(analysis)
+                finished.set()
+
+        self.engine.request_analysis(clone, received,
+            error_callback=lambda r: (errors.append(str(r)), finished.set()),
+            visits=max(16, min(64, self.context.config('engine/max_visits'))),
+            extra_settings={'conservativePass': True, 'wideRootNoise': 0.0}, ownership=False)
+        deadline = time.monotonic() + 45
+        while not finished.wait(.02):
+            if self.closed.is_set() or not self.engine.check_alive(exception_if_dead=True):
+                raise RuntimeError('KataGo stopped during the endgame check. Retry this turn.')
+            if time.monotonic() > deadline:
+                raise TimeoutError('KataGo endgame check timed out. Retry this turn.')
+        if errors:
+            raise RuntimeError('KataGo endgame check failed: ' + errors[0])
+        return result[0].get('rootInfo', {})
 
     def close(self):
         self.closed.set()

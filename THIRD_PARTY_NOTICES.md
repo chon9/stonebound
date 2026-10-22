@@ -19,3 +19,5 @@ The bundled Latin variable fonts DM Sans and Manrope are distributed under the S
 The city and character illustrations are original AI-generated assets, not downloaded CC0 assets. Their prompts and generation method are recorded in `ASSETS.md`. They depict original characters and places.
 
 Background music consists of four unmodified recordings by The Cynic Project / cynicmusic.com / pixelsphere.org, released under CC0 1.0 Universal on their individual OpenGameArt pages. Full track credits and source links are retained in `MUSIC.md`, recording hashes and download metadata in `web/assets/music/playlist.json`, and the CC0 text in `resources/licenses/music/CC0-1.0.txt`. The music is embedded for offline playback.
+
+The analysis-client friendly-pass check in `stonebound/endgame.py` follows the approach of KataGo v1.18.1 `PlayUtils::maybeFriendlyPass`, with stricter board-settlement checks matching Stonebound’s scoring. KataGo’s copyright and MIT license are preserved in the bundled dependency notices.
